@@ -7,8 +7,10 @@ import java.util.concurrent.Executor;
 
 public interface RequestProcessor {
 
-    RemotingCommand process(RemotingCommand request, ChannelHandlerContext ctx);
+    RemotingCommand process(ChannelHandlerContext ctx, RemotingCommand request);
 
-    void setExecutor(Executor executor);
+    default Executor executor() {
+        return null;
+    }
 
 }
