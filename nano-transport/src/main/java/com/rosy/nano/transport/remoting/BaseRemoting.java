@@ -2,10 +2,11 @@ package com.rosy.nano.transport.remoting;
 
 import com.rosy.nano.transport.command.RemotingCommand;
 import com.rosy.nano.transport.connection.Connection;
+import com.rosy.nano.transport.exception.RemotingInvokeInterruptedException;
+import com.rosy.nano.transport.exception.RemotingInvokeTimeoutException;
+import com.rosy.nano.transport.exception.RemotingSendRequestException;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.handler.pcap.PcapWriteHandler;
-import io.netty.util.HashedWheelTimer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,13 +42,18 @@ public abstract class BaseRemoting {
         }
     }
 
-
     // TODO 加上类似 RocketMQ 的限流机制
     public RemotingCommand invokeSync(Connection conn, RemotingCommand request, long timeoutNanos) {
         try {
-            return invoke0(conn, request, timeoutNanos).get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            return invoke0(conn, request, timeoutNanos).get(timeoutNanos, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RemotingInvokeInterruptedException(request.getOpaque(), conn.ch().remoteAddress().toString(), request.getCode(), "request interrupted", e);
+        } catch (TimeoutException e) {
+            throw new RemotingInvokeTimeoutException(request.getOpaque(), conn.ch().remoteAddress().toString(), request.getCode(), "request timeout", e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause() == null ? e : e.getCause();
+            throw new RemotingSendRequestException(request.getOpaque(), conn.ch().remoteAddress().toString(), request.getCode(), "request execution failed", cause);
         }
     }
 

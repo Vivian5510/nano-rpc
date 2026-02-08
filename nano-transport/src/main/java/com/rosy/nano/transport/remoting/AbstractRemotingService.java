@@ -2,18 +2,23 @@ package com.rosy.nano.transport.remoting;
 
 import com.google.common.base.Preconditions;
 import com.rosy.nano.transport.command.RemotingCommand;
+import com.rosy.nano.transport.lifecycle.LifeCycleSupport;
 import com.rosy.nano.transport.processor.RequestProcessor;
 import com.rosy.nano.transport.processor.RequestProcessorRegistry;
 import io.netty.channel.ChannelHandlerContext;
+import lombok.Setter;
 
 import java.util.concurrent.Executor;
 
 public abstract class AbstractRemotingService implements RemotingService {
 
-    BaseRemoting remoting;
-    RequestProcessorRegistry registry;
-    RequestProcessor defaultProcessor;
-    Executor defaultProcessorExecutor;
+    private final LifeCycleSupport SUPPORT = new LifeCycleSupport();
+
+    private final BaseRemoting remoting;
+    private final RequestProcessorRegistry registry;
+    private final RequestProcessor defaultProcessor;
+    @Setter
+    private Executor defaultProcessorExecutor;
 
     protected AbstractRemotingService(BaseRemoting remoting, RequestProcessorRegistry registry, RequestProcessor defaultProcessor) {
         this(remoting, registry, defaultProcessor, null);
@@ -43,14 +48,24 @@ public abstract class AbstractRemotingService implements RemotingService {
 
     @Override
     public Executor defaultProcessorExecutor() {
-         return defaultProcessorExecutor;
+        return defaultProcessorExecutor;
+    }
+
+    @Override
+    public void launch() {
+        SUPPORT.launch();
+    }
+
+    @Override
+    public void shutdown() {
+        SUPPORT.shutdown();
     }
 
     @Override
     public void process(ChannelHandlerContext ctx, RemotingCommand command) {
         Preconditions.checkArgument(command != null, "command received is null");
 
-        if(command.isResponse()) {
+        if (command.isResponse()) {
             processResponse(ctx, command);
         } else {
             processRequest(ctx, command);
@@ -69,7 +84,7 @@ public abstract class AbstractRemotingService implements RemotingService {
         Runnable task = () -> {
             try {
                 RemotingCommand response = p.process(ctx, request);
-                if(!request.isOneWay()) {
+                if (!request.isOneWay()) {
                     Preconditions.checkState(response != null, "response can't be null for two-way request");
                     Preconditions.checkState(response.isResponse(), "command type must be response here");
                     Preconditions.checkState(response.getOpaque() == request.getOpaque(), "opaque must be equal");
@@ -80,7 +95,7 @@ public abstract class AbstractRemotingService implements RemotingService {
             }
         };
 
-        if(e == null) task.run();
+        if (e == null) task.run();
         else e.execute(task);
     }
 
