@@ -4,14 +4,11 @@ import com.rosy.nano.transport.command.RemotingCommand;
 import com.rosy.nano.transport.lifecycle.LifeCycle;
 import com.rosy.nano.transport.processor.RequestProcessor;
 import com.rosy.nano.transport.processor.RequestProcessorRegistry;
-import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.util.concurrent.Executor;
 
 public interface RemotingService extends LifeCycle {
-
-    Bootstrap bootstrap();
 
     BaseRemoting remoting();
 
@@ -24,8 +21,6 @@ public interface RemotingService extends LifeCycle {
     default void registerProcessor(int code, RequestProcessor processor) {
         registry().register(code, processor);
     }
-
-    void configureBootstrap(Bootstrap bootstrap);
 
     void process(ChannelHandlerContext ctx, RemotingCommand command);
 }
