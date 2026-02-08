@@ -6,9 +6,6 @@ import lombok.Getter;
 public enum HeaderSerializeType {
     JSON(0);
 
-    @Getter
-    private final int code;
-
     private static final HeaderSerializeType[] LOOKUP = new HeaderSerializeType[256];
 
     static {
@@ -18,6 +15,9 @@ public enum HeaderSerializeType {
             LOOKUP[i] = t;
         }
     }
+
+    @Getter
+    private final int code;
 
     HeaderSerializeType(int code) {
         Preconditions.checkArgument(code >= 0 && code <= 255, "code out of range: %s", code);

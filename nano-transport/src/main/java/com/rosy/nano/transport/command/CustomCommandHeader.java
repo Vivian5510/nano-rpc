@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 
 public abstract class CustomCommandHeader {
 

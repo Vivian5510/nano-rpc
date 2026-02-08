@@ -2,8 +2,6 @@ package com.rosy.nano.transport.handler;
 
 import com.google.common.base.Preconditions;
 import com.rosy.nano.transport.command.RemotingCommand;
-import com.rosy.nano.transport.processor.RequestProcessor;
-import com.rosy.nano.transport.processor.RequestProcessorRegistry;
 import com.rosy.nano.transport.remoting.RemotingService;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;

@@ -29,11 +29,8 @@ public class RemotingCommand {
     private static final int SERIALIZE_TYPE_MASK = 0xFF;
 
     private static final String REMOTING_VERSION_KEY = "nano.remoting.version";
-
-    private static volatile int configVersion = -1;
-
     private static final AtomicLong REQUEST_ID = new AtomicLong(0);
-
+    private static volatile int configVersion = -1;
     private int code;
 
     private int version;
@@ -94,6 +91,52 @@ public class RemotingCommand {
         return command;
     }
 
+    public static RemotingCommand decode(ByteBuf frame) {
+        int headerLenType = frame.readInt();
+        int headerLen = getHeaderLen(headerLenType);
+        HeaderSerializeType type = getHeaderSerializeType(headerLenType);
+
+        if (headerLen > frame.readableBytes()) throw new IllegalArgumentException("bad headerLen=" + headerLen);
+
+        byte[] headerBytes = new byte[headerLen];
+        frame.readBytes(headerBytes);
+
+        RemotingCommand command = headerDecode(headerBytes, type);
+
+        if (frame.readableBytes() > 0) {
+            byte[] body = new byte[frame.readableBytes()];
+            frame.readBytes(body);
+            command.body = body;
+        }
+
+        return command;
+    }
+
+    private static RemotingCommand headerDecode(byte[] headerBytes, HeaderSerializeType type) {
+        RemotingCommand command = new RemotingCommand();
+        CommandHeadDTO dto = HeaderSerializerRegistry.get(type).decode(headerBytes);
+        command.code = dto.getCode();
+        command.version = dto.getVersion();
+        command.opaque = dto.getOpaque();
+        command.flag = dto.getFlag();
+        command.remark = dto.getRemark();
+        command.extFields = dto.getExtFields();
+        command.headerSerializeType = type;
+        return command;
+    }
+
+    public static int calHeaderLenType(int headerLen, HeaderSerializeType type) {
+        return (headerLen & HEADER_LEN_MASK) | ((type.getCode() & SERIALIZE_TYPE_MASK) << 24);
+    }
+
+    public static int getHeaderLen(int headerLenType) {
+        return headerLenType & HEADER_LEN_MASK;
+    }
+
+    public static HeaderSerializeType getHeaderSerializeType(int headerLenType) {
+        return HeaderSerializeType.from((headerLenType >>> 24) & SERIALIZE_TYPE_MASK);
+    }
+
     public Map<String, String> getOrCreateExtFields() {
         if (extFields == null) extFields = new HashMap<>();
         return extFields;
@@ -129,40 +172,6 @@ public class RemotingCommand {
         return HeaderSerializerRegistry.get(headerSerializeType).encode(dto);
     }
 
-    public static RemotingCommand decode(ByteBuf frame) {
-        int headerLenType = frame.readInt();
-        int headerLen = getHeaderLen(headerLenType);
-        HeaderSerializeType type = getHeaderSerializeType(headerLenType);
-
-        if (headerLen > frame.readableBytes()) throw new IllegalArgumentException("bad headerLen=" + headerLen);
-
-        byte[] headerBytes = new byte[headerLen];
-        frame.readBytes(headerBytes);
-
-        RemotingCommand command = headerDecode(headerBytes, type);
-
-        if (frame.readableBytes() > 0) {
-            byte[] body = new byte[frame.readableBytes()];
-            frame.readBytes(body);
-            command.body = body;
-        }
-
-        return command;
-    }
-
-    private static RemotingCommand headerDecode(byte[] headerBytes, HeaderSerializeType type) {
-        RemotingCommand command = new RemotingCommand();
-        CommandHeadDTO dto = HeaderSerializerRegistry.get(type).decode(headerBytes);
-        command.code = dto.getCode();
-        command.version = dto.getVersion();
-        command.opaque = dto.getOpaque();
-        command.flag = dto.getFlag();
-        command.remark = dto.getRemark();
-        command.extFields = dto.getExtFields();
-        command.headerSerializeType = type;
-        return command;
-    }
-
     public void encodeHeader() {
         if (header != null) header.encodeTo0(getOrCreateExtFields());
     }
@@ -172,18 +181,6 @@ public class RemotingCommand {
         h.decodeFrom0(extFields);
         this.header = h;
         return h;
-    }
-
-    public static int calHeaderLenType(int headerLen, HeaderSerializeType type) {
-        return (headerLen & HEADER_LEN_MASK) | ((type.getCode() & SERIALIZE_TYPE_MASK) << 24);
-    }
-
-    public static int getHeaderLen(int headerLenType) {
-        return headerLenType & HEADER_LEN_MASK;
-    }
-
-    public static HeaderSerializeType getHeaderSerializeType(int headerLenType) {
-        return HeaderSerializeType.from((headerLenType >>> 24) & SERIALIZE_TYPE_MASK);
     }
 
     public void markResponse() {
