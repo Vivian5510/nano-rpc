@@ -1,4 +1,4 @@
-package com.rosy.nano.protocol.rpc.remoting;
+package com.rosy.nano.protocol.rpc;
 
 import com.rosy.nano.transport.remoting.BaseRemoting;
 

@@ -1,4 +1,4 @@
-package com.rosy.nano.transport.connection;
+package com.rosy.nano.protocol.rpc.connection;
 
-public class ConnectionManager {
+public class RpcConnectionManager {
 }
