@@ -1,20 +1,20 @@
 package com.rosy.nano.protocol.rpc.serialization;
 
+import com.google.common.base.Preconditions;
+
 /**
  * Body 序列化类型编码（1 byte）。
  */
 public enum BodySerializeType {
 
-    PROTOBUF(0);
+    KRYO(0);
 
     private static final BodySerializeType[] LOOKUP = new BodySerializeType[256];
 
     static {
         for (BodySerializeType t : values()) {
             int code = t.code;
-            if (LOOKUP[code] != null) {
-                throw new IllegalStateException("Duplicate body serializer code: " + code);
-            }
+            Preconditions.checkState(LOOKUP[code] == null, "Duplicate body serializer code: %s", code);
             LOOKUP[code] = t;
         }
     }
@@ -22,9 +22,7 @@ public enum BodySerializeType {
     private final int code;
 
     BodySerializeType(int code) {
-        if (code < 0 || code > 255) {
-            throw new IllegalArgumentException("Serializer code out of range: " + code);
-        }
+        Preconditions.checkArgument(code >= 0 && code <= 255, "Serializer code out of range: %s", code);
         this.code = code;
     }
 
@@ -33,13 +31,9 @@ public enum BodySerializeType {
     }
 
     public static BodySerializeType from(int code) {
-        if (code < 0 || code > 255) {
-            throw new IllegalArgumentException("Serializer code out of range: " + code);
-        }
+        Preconditions.checkArgument(code >= 0 && code <= 255, "Serializer code out of range: %s", code);
         BodySerializeType type = LOOKUP[code];
-        if (type == null) {
-            throw new IllegalStateException("Unknown body serializer code: " + code);
-        }
+        Preconditions.checkState(type != null, "Unknown body serializer code: %s", code);
         return type;
     }
 }

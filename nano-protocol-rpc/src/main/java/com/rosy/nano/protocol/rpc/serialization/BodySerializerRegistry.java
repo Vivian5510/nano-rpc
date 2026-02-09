@@ -1,5 +1,7 @@
 package com.rosy.nano.protocol.rpc.serialization;
 
+import com.google.common.base.Preconditions;
+
 import java.util.EnumMap;
 import java.util.ServiceLoader;
 
@@ -9,20 +11,13 @@ public final class BodySerializerRegistry {
 
     static {
         ServiceLoader.load(BodySerializer.class, BodySerializerRegistry.class.getClassLoader()).forEach(s -> {
-            BodySerializeType t = s.type();
-            if (t == null) {
-                throw new IllegalArgumentException("BodySerializeType can't be null");
-            }
+            BodySerializeType t = Preconditions.checkNotNull(s.type(), "BodySerializeType can't be null");
             BodySerializer old = MAP.put(t, s);
-            if (old != null) {
-                throw new IllegalStateException("Duplicate BodySerializer for " + t);
-            }
+            Preconditions.checkState(old == null, "Duplicate BodySerializer for %s", t);
         });
 
         for (BodySerializeType t : BodySerializeType.values()) {
-            if (!MAP.containsKey(t)) {
-                throw new IllegalStateException("Missing BodySerializer for " + t);
-            }
+            Preconditions.checkState(MAP.containsKey(t), "Missing BodySerializer for %s", t);
         }
     }
 
@@ -34,13 +29,9 @@ public final class BodySerializerRegistry {
     }
 
     public static BodySerializer get(BodySerializeType type) {
-        if (type == null) {
-            throw new IllegalArgumentException("BodySerializeType can't be null");
-        }
+        Preconditions.checkArgument(type != null, "BodySerializeType can't be null");
         BodySerializer serializer = MAP.get(type);
-        if (serializer == null) {
-            throw new IllegalStateException("No BodySerializer for " + type);
-        }
+        Preconditions.checkState(serializer != null, "No BodySerializer for %s", type);
         return serializer;
     }
 }
