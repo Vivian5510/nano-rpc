@@ -9,6 +9,8 @@ public final class HeaderSerializerRegistry {
 
     private static final EnumMap<HeaderSerializeType, HeaderSerializer> MAP = new EnumMap<>(HeaderSerializeType.class);
 
+    private HeaderSerializerRegistry() {}
+
     static {
         ServiceLoader.load(HeaderSerializer.class, HeaderSerializerRegistry.class.getClassLoader()).forEach(s -> {
             HeaderSerializeType t = Preconditions.checkNotNull(s.type(), "type null");

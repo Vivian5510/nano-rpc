@@ -59,7 +59,7 @@ public abstract class BaseRemoting {
 
     public void invokeAsync(Connection conn, RemotingCommand request, long timeoutNanos, RemotingCallback callback) {
         invoke0(conn, request, timeoutNanos).whenCompleteAsync((response, ex) -> {
-            if (ex == null) callback.onSuccess();
+            if (ex == null) callback.onSuccess(response);
             else callback.onFailure();
             callback.onComplete();
         }, callback.executor() == null ? ForkJoinPool.commonPool() : callback.executor());

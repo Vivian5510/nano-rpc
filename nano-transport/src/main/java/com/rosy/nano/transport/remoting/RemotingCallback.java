@@ -1,5 +1,7 @@
 package com.rosy.nano.transport.remoting;
 
+import com.rosy.nano.transport.command.RemotingCommand;
+
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 
@@ -7,7 +9,7 @@ public interface RemotingCallback {
 
     void onComplete();
 
-    default void onSuccess() {
+    default void onSuccess(RemotingCommand response) {
 
     }
 
