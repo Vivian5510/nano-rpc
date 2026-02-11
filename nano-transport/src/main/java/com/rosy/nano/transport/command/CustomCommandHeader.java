@@ -25,4 +25,10 @@ public abstract class CustomCommandHeader {
         decodeFrom(safe);
         validate();
     }
+
+    protected final String requireExt(Map<String, String> extFields, String key) {
+        String value = extFields.get(key);
+        Preconditions.checkArgument(value != null, "missing %s", key);
+        return value;
+    }
 }

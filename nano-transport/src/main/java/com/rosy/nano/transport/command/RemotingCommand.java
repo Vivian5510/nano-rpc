@@ -70,25 +70,28 @@ public class RemotingCommand {
     }
 
     public static RemotingCommand newRequest(int code, CustomCommandHeader header, HeaderSerializeType type) {
-        RemotingCommand command = new RemotingCommand();
-        command.code = code;
-        command.opaque = REQUEST_ID.getAndIncrement();
-        command.header = header;
-        command.headerSerializeType = type;
-        command.version = currentVersion();
-        return command;
+        RemotingCommand request = new RemotingCommand();
+        request.code = code;
+        request.opaque = REQUEST_ID.getAndIncrement();
+        request.header = header;
+        request.headerSerializeType = type;
+        request.version = currentVersion();
+        return request;
     }
 
-    public static RemotingCommand newResponse(int code, CustomCommandHeader header) {
-        RemotingCommand command = newRequest(code, header);
-        command.markResponse();
-        return command;
+    public static RemotingCommand newResponse(int code, RemotingCommand request, CustomCommandHeader header) {
+        return newResponse(code, request, header, HeaderSerializeType.JSON);
     }
 
-    public static RemotingCommand newResponse(int code, CustomCommandHeader header, HeaderSerializeType type) {
-        RemotingCommand command = newRequest(code, header, type);
-        command.markResponse();
-        return command;
+    public static RemotingCommand newResponse(int code, RemotingCommand request, CustomCommandHeader header, HeaderSerializeType type) {
+        RemotingCommand response = new RemotingCommand();
+        response.code = code;
+        response.opaque = request.getOpaque();
+        response.header = header;
+        response.headerSerializeType = type;
+        response.version = currentVersion();
+        response.markResponse();
+        return response;
     }
 
     public static RemotingCommand decode(ByteBuf frame) {

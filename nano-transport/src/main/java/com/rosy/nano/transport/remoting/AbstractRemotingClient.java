@@ -21,7 +21,7 @@ public abstract class AbstractRemotingClient extends AbstractRemotingService imp
         bootstrap = new Bootstrap();
     }
 
-    Bootstrap bootstrap() {
+    protected Bootstrap bootstrap() {
         return bootstrap;
     }
 

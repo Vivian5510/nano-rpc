@@ -13,7 +13,7 @@ public interface RemotingCallback {
 
     }
 
-    default void onFailure() {
+    default void onFailure(Throwable t) {
 
     }
 
