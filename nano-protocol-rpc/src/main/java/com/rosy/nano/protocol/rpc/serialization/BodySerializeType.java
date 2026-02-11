@@ -26,14 +26,14 @@ public enum BodySerializeType {
         this.code = code;
     }
 
-    public int code() {
-        return code;
-    }
-
     public static BodySerializeType from(int code) {
         Preconditions.checkArgument(code >= 0 && code <= 255, "Serializer code out of range: %s", code);
         BodySerializeType type = LOOKUP[code];
         Preconditions.checkState(type != null, "Unknown body serializer code: %s", code);
         return type;
+    }
+
+    public int code() {
+        return code;
     }
 }

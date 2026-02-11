@@ -16,10 +16,10 @@ public class KryoBodySerializer implements BodySerializer {
     private final ConcurrentMap<String, Class<?>> classCache = new ConcurrentHashMap<>();
 
     private final ThreadLocal<Kryo> KRYO = ThreadLocal.withInitial(() -> {
-       Kryo k = new Kryo();
-       k.setRegistrationRequired(false);
-       k.setReferences(true);
-       return k;
+        Kryo k = new Kryo();
+        k.setRegistrationRequired(false);
+        k.setReferences(true);
+        return k;
     });
 
     private final ThreadLocal<Output> OUTPUT = ThreadLocal.withInitial(() -> {
