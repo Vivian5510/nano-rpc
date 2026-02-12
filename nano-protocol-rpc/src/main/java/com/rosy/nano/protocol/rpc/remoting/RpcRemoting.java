@@ -55,8 +55,10 @@ public class RpcRemoting extends BaseRemoting {
     }
 
     public Object decodeBody(RemotingCommand command) {
+        if (command.getBody() == null || command.getBody().length == 0) return null;
+
         RpcCommonHeader header = command.isResponse() ? new RpcResponseHeader() : new RpcRequestHeader();
-        header = command.decodeHeader(header);
+        header = command.decodeCustomHeader(header);
         BodySerializer serializer = BodySerializerRegistry.get(header.getBodySerializerType());
         return serializer.decode(command.getBody(), header.getBodyClassName());
     }

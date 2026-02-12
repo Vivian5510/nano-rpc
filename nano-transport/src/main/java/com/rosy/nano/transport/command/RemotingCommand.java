@@ -140,7 +140,7 @@ public class RemotingCommand {
         return HeaderSerializeType.from((headerLenType >>> 24) & SERIALIZE_TYPE_MASK);
     }
 
-    public Map<String, String> getOrCreateExtFields() {
+    public Map<String, String>getOrCreateExtFields() {
         if (extFields == null) extFields = new HashMap<>();
         return extFields;
     }
@@ -150,7 +150,7 @@ public class RemotingCommand {
     }
 
     public void encode(ByteBuf out) {
-        encodeHeader(); // custom header -> extFields
+        encodeCustomHeader(); // custom header -> extFields
 
         byte[] headerBytes = headerEncode();
         int bodyLen = body == null ? 0 : body.length;
@@ -175,12 +175,16 @@ public class RemotingCommand {
         return HeaderSerializerRegistry.get(headerSerializeType).encode(dto);
     }
 
-    public void encodeHeader() {
+    public void encodeCustomHeader() {
         if (header != null) header.encodeTo0(getOrCreateExtFields());
     }
 
-    public <T extends CustomCommandHeader> T decodeHeader(T h) {
+    @SuppressWarnings("unchecked")
+    public <T extends CustomCommandHeader> T decodeCustomHeader(T h) {
         Preconditions.checkArgument(h != null, "header can't be null when decoding");
+
+        if (h.getClass().isInstance(header)) return (T) this.header;
+
         h.decodeFrom0(extFields);
         this.header = h;
         return h;
