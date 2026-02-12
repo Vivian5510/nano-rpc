@@ -4,7 +4,10 @@ import com.rosy.nano.protocol.rpc.command.RpcRequest;
 import com.rosy.nano.protocol.rpc.command.RpcRequestCode;
 import com.rosy.nano.protocol.rpc.command.RpcResponse;
 import com.rosy.nano.protocol.rpc.connection.RpcConnection;
+import com.rosy.nano.protocol.rpc.processor.RpcHeartbeatProcessor;
+import com.rosy.nano.protocol.rpc.processor.RpcRequestProcessor;
 import com.rosy.nano.protocol.rpc.processor.RpcRequestProcessorRegistry;
+import com.rosy.nano.protocol.rpc.processor.rpc.UserProcessorRegistry;
 import com.rosy.nano.protocol.rpc.serialization.BodySerializeType;
 import com.rosy.nano.transport.command.RemotingCommand;
 import com.rosy.nano.transport.handler.BackPressureHandler;
@@ -28,15 +31,17 @@ public final class RpcRemotingServer extends AbstractRemotingServer implements R
     private final BodySerializeType bType;
     private final RpcInvokeSupport SUPPORT;
 
-    public RpcRemotingServer(String ip, int port, RpcRemoting remoting, RpcRequestProcessorRegistry registry, RequestProcessor defaultProcessor, HeaderSerializeType hType, BodySerializeType bType) {
-        this(ip, port, remoting, registry, defaultProcessor, null, hType, bType);
+    public RpcRemotingServer(String ip, int port, RpcRemoting remoting, RequestProcessor defaultProcessor, HeaderSerializeType hType, BodySerializeType bType) {
+        this(ip, port, remoting, defaultProcessor, null, hType, bType);
     }
 
-    public RpcRemotingServer(String ip, int port, RpcRemoting remoting, RpcRequestProcessorRegistry registry, RequestProcessor defaultProcessor, Executor defaultProcessorExecutor, HeaderSerializeType hType, BodySerializeType bType) {
-        super(ip, port, remoting, registry, defaultProcessor, defaultProcessorExecutor);
+    public RpcRemotingServer(String ip, int port, RpcRemoting remoting, RequestProcessor defaultProcessor, Executor defaultProcessorExecutor, HeaderSerializeType hType, BodySerializeType bType) {
+        super(ip, port, remoting, new RpcRequestProcessorRegistry(), defaultProcessor, defaultProcessorExecutor);
         this.hType = hType;
         this.bType = bType;
         this.SUPPORT = new RpcInvokeSupport(remoting);
+        registerProcessor(RpcRequestCode.RPC_REQUEST, new RpcRequestProcessor(SUPPORT.remoting(), new UserProcessorRegistry()));
+        registerProcessor(RpcRequestCode.RPC_HEARTBEAT, new RpcHeartbeatProcessor());
     }
 
     @Override
@@ -67,7 +72,7 @@ public final class RpcRemotingServer extends AbstractRemotingServer implements R
     @Override
     public <T extends RpcResponse> T invokeSync(RpcConnection conn, RpcRequest request, long timeoutNanos) {
         RemotingCommand command = SUPPORT.remoting().toRequest(request, RpcRequestCode.RPC_REQUEST, hType, bType);
-        return SUPPORT.remoting().decodeResponse(invokeSync(conn, command, timeoutNanos));
+        return SUPPORT.decodeResponse(invokeSync(conn, command, timeoutNanos));
     }
 
     @Override
