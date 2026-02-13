@@ -14,7 +14,7 @@ public class KryoBodySerializerTest {
     private KryoBodySerializer serializer;
 
     @BeforeMethod
-    public void setup() {
+    public void setUp() {
         serializer = new KryoBodySerializer();
     }
 
