@@ -30,6 +30,7 @@ public final class RpcRemotingServer extends AbstractRemotingServer implements R
     private final HeaderSerializeType hType;
     private final BodySerializeType bType;
     private final RpcInvokeSupport SUPPORT;
+    private final UserProcessorRegistry uRegistry;
 
     public RpcRemotingServer(String ip, int port, RpcRemoting remoting, RequestProcessor defaultProcessor, HeaderSerializeType hType, BodySerializeType bType) {
         this(ip, port, remoting, defaultProcessor, null, hType, bType);
@@ -40,7 +41,8 @@ public final class RpcRemotingServer extends AbstractRemotingServer implements R
         this.hType = hType;
         this.bType = bType;
         this.SUPPORT = new RpcInvokeSupport(remoting);
-        registerProcessor(RpcRequestCode.RPC_REQUEST, new RpcRequestProcessor(SUPPORT.remoting(), new UserProcessorRegistry()));
+        this.uRegistry = new UserProcessorRegistry();
+        registerProcessor(RpcRequestCode.RPC_REQUEST, new RpcRequestProcessor(SUPPORT.remoting(), uRegistry));
         registerProcessor(RpcRequestCode.RPC_HEARTBEAT, new RpcHeartbeatProcessor());
     }
 
@@ -86,5 +88,10 @@ public final class RpcRemotingServer extends AbstractRemotingServer implements R
         RemotingCommand command = SUPPORT.remoting().toRequest(request, RpcRequestCode.RPC_REQUEST, hType, bType);
         command.markOneway();
         invokeOneway(conn, command, timeoutNanos);
+    }
+
+    @Override
+    public UserProcessorRegistry uRegistry() {
+        return uRegistry;
     }
 }

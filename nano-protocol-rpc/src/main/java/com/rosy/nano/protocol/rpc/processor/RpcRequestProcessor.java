@@ -30,7 +30,7 @@ public class RpcRequestProcessor implements RequestProcessor {
         String interest = header.getBodyClassName();
         UserProcessor processor = registry.match(interest);
 
-        if(processor == null) return RemotingCommand.newResponse(RpcResponseCode.NO_PROCESSOR, request, new RpcResponseHeader("no processor for interest=" + interest));
+        if(processor == null) return RemotingCommand.newResponse(RpcResponseCode.NO_PROCESSOR, request, new RpcResponseHeader("no processor for interest=" + interest), request.getHeaderSerializeType());
 
         try {
             RpcResponse rpcResponse = processor.process(ctx, rpcRequest);
@@ -42,7 +42,7 @@ public class RpcRequestProcessor implements RequestProcessor {
                     request.getHeaderSerializeType()
             );
         } catch (Exception e) {
-            return RemotingCommand.newResponse(RpcResponseCode.INTERNAL_ERROR, request, new RpcResponseHeader("unexpected error happen when process rpc-request. info=" + e.getMessage()));
+            return RemotingCommand.newResponse(RpcResponseCode.INTERNAL_ERROR, request, new RpcResponseHeader("unexpected error happen when process rpc-request. info=" + e.getMessage()), request.getHeaderSerializeType() );
         }
     }
 }
