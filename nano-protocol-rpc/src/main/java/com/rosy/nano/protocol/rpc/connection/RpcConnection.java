@@ -6,7 +6,7 @@ import io.netty.channel.Channel;
 public class RpcConnection implements Connection {
 
     private final String addr;
-    private Channel ch;
+    private final Channel ch;
 
     public RpcConnection(String addr, Channel ch) {
         this.addr = addr;
@@ -24,5 +24,11 @@ public class RpcConnection implements Connection {
 
     public boolean isActive() {
         return ch != null && ch.isActive();
+    }
+
+    public void close() {
+        if (ch != null) {
+            ch.close();
+        }
     }
 }
