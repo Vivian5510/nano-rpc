@@ -54,6 +54,8 @@ public abstract class BaseRemoting {
         } catch (ExecutionException e) {
             Throwable cause = e.getCause() == null ? e : e.getCause();
             throw new RemotingSendRequestException(request.getOpaque(), conn.ch().remoteAddress().toString(), request.getCode(), "request execution failed", cause);
+        } finally {
+            PENDING_REQUESTS.remove(request.getOpaque());
         }
     }
 
@@ -76,8 +78,12 @@ public abstract class BaseRemoting {
 
         conn.ch().writeAndFlush(request).addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture channelFuture) throws Exception {
-
+            public void operationComplete(ChannelFuture f) throws Exception {
+                if (!f.isSuccess()) {
+                    if (PENDING_REQUESTS.remove(opaque, future)) {
+                        future.fail(f.cause());
+                    }
+                }
             }
         });
 
@@ -87,5 +93,4 @@ public abstract class BaseRemoting {
     public void invokeOneway(Connection conn, RemotingCommand request, long timeoutNanos) {
         conn.ch().writeAndFlush(request);
     }
-
 }
