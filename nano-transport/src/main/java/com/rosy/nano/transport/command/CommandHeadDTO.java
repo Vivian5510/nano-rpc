@@ -1,14 +1,14 @@
 package com.rosy.nano.transport.command;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.Map;
 
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CommandHeadDTO {
     private int code;
 
