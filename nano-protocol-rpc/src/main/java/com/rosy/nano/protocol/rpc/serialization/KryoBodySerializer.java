@@ -3,12 +3,14 @@ package com.rosy.nano.protocol.rpc.serialization;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.auto.service.AutoService;
 import com.google.common.base.Preconditions;
 import com.rosy.nano.transport.exception.RemotingSerializationException;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+@AutoService(BodySerializer.class)
 public class KryoBodySerializer implements BodySerializer {
 
     private static final int INIT_BUFFER_SIZE = 256;
