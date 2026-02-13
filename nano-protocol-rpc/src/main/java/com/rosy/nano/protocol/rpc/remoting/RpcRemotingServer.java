@@ -9,9 +9,11 @@ import com.rosy.nano.protocol.rpc.processor.RpcRequestProcessor;
 import com.rosy.nano.protocol.rpc.processor.RpcRequestProcessorRegistry;
 import com.rosy.nano.protocol.rpc.processor.rpc.UserProcessorRegistry;
 import com.rosy.nano.protocol.rpc.serialization.BodySerializeType;
+import com.rosy.nano.protocol.rpc.heartbeat.HeartbeatService;
 import com.rosy.nano.transport.command.RemotingCommand;
 import com.rosy.nano.transport.handler.BackPressureHandler;
 import com.rosy.nano.transport.handler.CommandProcessHandler;
+import com.rosy.nano.transport.handler.NettyConnectManageHandler;
 import com.rosy.nano.transport.handler.NettyDecoder;
 import com.rosy.nano.transport.handler.NettyEncoder;
 import com.rosy.nano.transport.processor.RequestProcessor;
@@ -22,8 +24,10 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 public final class RpcRemotingServer extends AbstractRemotingServer implements RpcServer {
 
@@ -54,6 +58,7 @@ public final class RpcRemotingServer extends AbstractRemotingServer implements R
         NettyEncoder encoder = new NettyEncoder();
         BackPressureHandler backPressure = new BackPressureHandler();
         CommandProcessHandler process = new CommandProcessHandler(this);
+        NettyConnectManageHandler connectManageHandler = new NettyConnectManageHandler(null);
 
         bootstrap.group(boss, worker)
                 .channel(NioServerSocketChannel.class)
@@ -65,6 +70,8 @@ public final class RpcRemotingServer extends AbstractRemotingServer implements R
                         ChannelPipeline p = ch.pipeline();
                         p.addLast("encoder", encoder);
                         p.addLast("decoder", new NettyDecoder());
+                        p.addLast("idle", new IdleStateHandler(0, 0, HeartbeatService.CHANNEL_IDLE_MS, TimeUnit.MILLISECONDS));
+                        p.addLast("conn-manage", connectManageHandler);
                         p.addLast("back-pressure", backPressure);
                         p.addLast("process", process);
                     }
