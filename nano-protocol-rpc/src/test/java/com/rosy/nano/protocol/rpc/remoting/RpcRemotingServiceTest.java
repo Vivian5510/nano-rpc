@@ -2,6 +2,7 @@ package com.rosy.nano.protocol.rpc.remoting;
 
 import com.rosy.nano.protocol.rpc.command.RpcRequest;
 import com.rosy.nano.protocol.rpc.command.RpcResponse;
+import com.rosy.nano.protocol.rpc.exception.RpcRemotingException;
 import com.rosy.nano.protocol.rpc.processor.rpc.UserProcessor;
 import com.rosy.nano.protocol.rpc.serialization.BodySerializeType;
 import com.rosy.nano.transport.connection.Connection;
@@ -19,6 +20,7 @@ import java.net.ServerSocket;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RpcRemotingServiceTest {
     private RpcRemotingServer server;
@@ -65,6 +67,17 @@ public class RpcRemotingServiceTest {
         assertThat(response.getSum()).isEqualTo(3);
     }
 
+    @Test
+    public void should_report_no_user_processor() {
+        assertThatThrownBy(() -> client.invokeSync(
+                "127.0.0.1:" + port,
+                new MinusRequest(1, 2),
+                TimeUnit.SECONDS.toNanos(10)
+        ))
+                .isInstanceOf(RpcRemotingException.class)
+                .hasMessage("no processor for interest=com.rosy.nano.protocol.rpc.remoting.RpcRemotingServiceTest$MinusRequest");
+    }
+
     private static int findFreePort() throws Exception {
         try (ServerSocket socket = new ServerSocket(0)) {
             socket.setReuseAddress(true);
@@ -98,5 +111,13 @@ public class RpcRemotingServiceTest {
             AddRequest r = (AddRequest) request;
             return new AddResponse(r.getLeft() + r.getRight());
         }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MinusRequest implements RpcRequest {
+        private int left;
+        private int right;
     }
 }
