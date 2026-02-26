@@ -4,6 +4,7 @@ import com.rosy.nano.protocol.rpc.command.RpcRequest;
 import com.rosy.nano.protocol.rpc.command.RpcRequestCode;
 import com.rosy.nano.protocol.rpc.command.RpcResponse;
 import com.rosy.nano.protocol.rpc.connection.RpcConnection;
+import com.rosy.nano.protocol.rpc.handler.RpcConnectionInitHandler;
 import com.rosy.nano.protocol.rpc.processor.RpcHeartbeatProcessor;
 import com.rosy.nano.protocol.rpc.processor.RpcRequestProcessor;
 import com.rosy.nano.protocol.rpc.processor.RpcRequestProcessorRegistry;
@@ -61,6 +62,11 @@ public final class RpcRemotingServer extends AbstractRemotingServer implements R
                 .childOption(ChannelOption.TCP_NODELAY, true)
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .childHandler(commonChannelInitializer());
+    }
+
+    @Override
+    protected void beforeCommonPipeline(ChannelPipeline p, SocketChannel ch) {
+        p.addLast("rpc-conn-init", new RpcConnectionInitHandler());
     }
 
     @Override

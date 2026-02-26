@@ -103,7 +103,7 @@ public final class RpcRemotingClient extends AbstractRemotingClient implements R
 
         if (!f.isSuccess() || !f.channel().isActive()) throw new RemotingConnectException("do connect fail");
 
-        RpcConnection conn = new RpcConnection(addr, f.channel());
+        RpcConnection conn = RpcConnection.getOrCreate(f.channel());
         f.channel().closeFuture().addListener(cf -> {
             connectionManager.remove(addr, conn);
         });
