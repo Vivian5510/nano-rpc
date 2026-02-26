@@ -90,6 +90,7 @@ public final class NettyEventDispatcher implements Runnable, LifeCycle {
                         break;
                 }
             } catch (Throwable ignored) {
+
             }
         }
     }

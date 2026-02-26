@@ -12,21 +12,12 @@ public final class ClientChannelEventListener implements ChannelEventListener {
     }
 
     @Override
-    public void onChannelConnect(Channel channel) {
-    }
-
-    @Override
     public void onChannelClose(Channel channel) {
         heartbeatService.onChannelInactive(channel);
     }
 
     @Override
     public void onChannelException(Channel channel) {
-        heartbeatService.onChannelInactive(channel);
-    }
-
-    @Override
-    public void onChannelIdle(Channel channel) {
         heartbeatService.onChannelInactive(channel);
     }
 

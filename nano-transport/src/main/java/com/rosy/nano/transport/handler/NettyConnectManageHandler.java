@@ -13,9 +13,11 @@ import java.net.SocketAddress;
 
 public class NettyConnectManageHandler extends ChannelDuplexHandler {
     private final NettyEventDispatcher dispatcher;
+    private final boolean closeOnIdle;
 
-    public NettyConnectManageHandler(NettyEventDispatcher dispatcher) {
+    public NettyConnectManageHandler(NettyEventDispatcher dispatcher, boolean closeOnIdle) {
         this.dispatcher = dispatcher;
+        this.closeOnIdle = closeOnIdle;
     }
 
     @Override
@@ -35,19 +37,17 @@ public class NettyConnectManageHandler extends ChannelDuplexHandler {
     public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         closeChannel(ctx);
         super.disconnect(ctx, promise);
-        dispatch(NettyEventType.CLOSE, ctx);
     }
 
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-        closeChannel(ctx);
+        // close 是本端主动关闭连接，最终会到 inactive，而 inactive 会发 CLOSE 事件，所以这里就不需要再发
         super.close(ctx, promise);
-        dispatch(NettyEventType.CLOSE, ctx);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        closeChannel(ctx);
+        dispatch(NettyEventType.CLOSE, ctx); // 真正关闭事件统一在这里发
         super.channelInactive(ctx);
     }
 
@@ -55,7 +55,7 @@ public class NettyConnectManageHandler extends ChannelDuplexHandler {
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent event) {
             if (event.state() == IdleState.ALL_IDLE) {
-                closeChannel(ctx);
+                if (closeOnIdle) closeChannel(ctx);
                 dispatch(NettyEventType.IDLE, ctx);
             }
         }

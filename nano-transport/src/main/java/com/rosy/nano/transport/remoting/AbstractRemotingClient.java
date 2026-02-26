@@ -26,6 +26,11 @@ public abstract class AbstractRemotingClient extends AbstractRemotingService imp
     }
 
     @Override
+    public boolean isServerSide() {
+        return false;
+    }
+
+    @Override
     public void launch() {
         super.launch();
         initBootstrap(bootstrap());

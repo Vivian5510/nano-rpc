@@ -42,7 +42,6 @@ public final class RpcRemotingClient extends AbstractRemotingClient implements R
     private final BodySerializeType bType;
     private final RpcInvokeSupport SUPPORT;
     private final UserProcessorRegistry uRegistry;
-    private final NettyEventDispatcher eventDispatcher;
     private final HeartbeatService heartbeatService;
 
     public RpcRemotingClient(RpcRemoting remoting, RequestProcessor defaultProcessor, HeaderSerializeType hType, BodySerializeType bType) {
@@ -59,21 +58,19 @@ public final class RpcRemotingClient extends AbstractRemotingClient implements R
         registerProcessor(RpcRequestCode.RPC_HEARTBEAT, new RpcHeartbeatProcessor());
 
         this.heartbeatService = new HeartbeatService(remoting(), hType, remoting()::scanPendingRequests);
-        this.eventDispatcher = new NettyEventDispatcher(new ClientChannelEventListener(heartbeatService));
+        addEventListener(new ClientChannelEventListener(heartbeatService));
     }
 
     @Override
     public void launch() {
         super.launch();
         connectionManager.launch();
-        eventDispatcher.launch();
         heartbeatService.launch();
     }
 
     @Override
     public void shutdown() {
         heartbeatService.shutdown();
-        eventDispatcher.shutdown();
         connectionManager.shutdown();
         super.shutdown();
     }
@@ -81,27 +78,12 @@ public final class RpcRemotingClient extends AbstractRemotingClient implements R
     @Override
     public void initBootstrap(Bootstrap bootstrap) {
         EventLoopGroup group = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
-        NettyEncoder encoder = new NettyEncoder();
-        BackPressureHandler backPressure = new BackPressureHandler();
-        CommandProcessHandler process = new CommandProcessHandler(this);
-        NettyConnectManageHandler connectManageHandler = new NettyConnectManageHandler(eventDispatcher);
 
         bootstrap.group(group)
                 .channel(NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.SO_KEEPALIVE, true)
-                .handler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    protected void initChannel(SocketChannel ch) throws Exception {
-                        ChannelPipeline p = ch.pipeline();
-                        p.addLast("encoder", encoder);
-                        p.addLast("decoder", new NettyDecoder());
-                        p.addLast("idle", new IdleStateHandler(0, 0, HeartbeatService.CHANNEL_IDLE_MS, TimeUnit.MILLISECONDS));
-                        p.addLast("conn-manage", connectManageHandler);
-                        p.addLast("back-pressure", backPressure);
-                        p.addLast("process", process);
-                    }
-                });
+                .handler(commonChannelInitializer());
     }
 
     @Override
@@ -120,6 +102,7 @@ public final class RpcRemotingClient extends AbstractRemotingClient implements R
         ChannelFuture f = bootstrap().connect(hp.getHost(), hp.getPort()).syncUninterruptibly();
 
         if (!f.isSuccess() || !f.channel().isActive()) throw new RemotingConnectException("do connect fail");
+
         RpcConnection conn = new RpcConnection(addr, f.channel());
         f.channel().closeFuture().addListener(cf -> {
             connectionManager.remove(addr, conn);

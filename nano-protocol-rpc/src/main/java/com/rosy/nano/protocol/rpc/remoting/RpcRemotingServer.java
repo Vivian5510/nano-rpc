@@ -55,27 +55,12 @@ public final class RpcRemotingServer extends AbstractRemotingServer implements R
         EventLoopGroup boss = new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
         EventLoopGroup worker = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
 
-        NettyEncoder encoder = new NettyEncoder();
-        BackPressureHandler backPressure = new BackPressureHandler();
-        CommandProcessHandler process = new CommandProcessHandler(this);
-        NettyConnectManageHandler connectManageHandler = new NettyConnectManageHandler(null);
-
         bootstrap.group(boss, worker)
                 .channel(NioServerSocketChannel.class)
                 .option(ChannelOption.SO_BACKLOG, 1024)
                 .childOption(ChannelOption.TCP_NODELAY, true)
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
-                .childHandler(new ChannelInitializer<SocketChannel>() {
-                    protected void initChannel(SocketChannel ch) {
-                        ChannelPipeline p = ch.pipeline();
-                        p.addLast("encoder", encoder);
-                        p.addLast("decoder", new NettyDecoder());
-                        p.addLast("idle", new IdleStateHandler(0, 0, HeartbeatService.CHANNEL_IDLE_MS, TimeUnit.MILLISECONDS));
-                        p.addLast("conn-manage", connectManageHandler);
-                        p.addLast("back-pressure", backPressure);
-                        p.addLast("process", process);
-                    }
-                });
+                .childHandler(commonChannelInitializer());
     }
 
     @Override

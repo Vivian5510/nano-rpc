@@ -31,6 +31,11 @@ public abstract class AbstractRemotingServer extends AbstractRemotingService imp
     }
 
     @Override
+    public boolean isServerSide() {
+        return true;
+    }
+
+    @Override
     public String ip() {
         return ip;
     }

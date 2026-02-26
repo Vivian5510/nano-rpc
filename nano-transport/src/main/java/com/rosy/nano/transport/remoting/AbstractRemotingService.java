@@ -2,15 +2,26 @@ package com.rosy.nano.transport.remoting;
 
 import com.google.common.base.Preconditions;
 import com.rosy.nano.transport.command.RemotingCommand;
+import com.rosy.nano.transport.event.ChannelEventListener;
+import com.rosy.nano.transport.event.ChannelEventListenerChain;
+import com.rosy.nano.transport.event.NettyEventDispatcher;
+import com.rosy.nano.transport.handler.*;
 import com.rosy.nano.transport.lifecycle.LifeCycleSupport;
 import com.rosy.nano.transport.processor.RequestProcessor;
 import com.rosy.nano.transport.processor.RequestProcessorRegistry;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import lombok.Setter;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractRemotingService implements RemotingService {
+    
+    private static final int CHANNEL_IDLE_MS = 90_000;
 
     private final LifeCycleSupport SUPPORT = new LifeCycleSupport();
 
@@ -19,6 +30,14 @@ public abstract class AbstractRemotingService implements RemotingService {
     private final RequestProcessor defaultProcessor;
     @Setter
     private Executor defaultProcessorExecutor;
+
+    private final ChannelEventListenerChain eventListenerChain = new ChannelEventListenerChain();
+    private final NettyEventDispatcher eventDispatcher = new NettyEventDispatcher(eventListenerChain);
+
+    // sharable handlers
+    private final NettyEncoder encoder = new NettyEncoder();
+    private final BackPressureHandler backPressure = new BackPressureHandler();
+    private final CommandProcessHandler process = new CommandProcessHandler(this);
 
     protected AbstractRemotingService(BaseRemoting remoting, RequestProcessorRegistry registry, RequestProcessor defaultProcessor) {
         this(remoting, registry, defaultProcessor, null);
@@ -54,11 +73,13 @@ public abstract class AbstractRemotingService implements RemotingService {
     @Override
     public void launch() {
         SUPPORT.launch();
+        eventDispatcher.launch();
     }
 
     @Override
     public void shutdown() {
         SUPPORT.shutdown();
+        eventDispatcher.shutdown();
     }
 
     @Override
@@ -106,5 +127,35 @@ public abstract class AbstractRemotingService implements RemotingService {
     @Override
     public RequestProcessorRegistry registry() {
         return registry;
+    }
+
+    @Override
+    public final void addEventListener(ChannelEventListener listener) {
+        eventListenerChain.addEventListener(listener);
+    }
+
+    protected final ChannelInitializer<SocketChannel> commonChannelInitializer() {
+        return new ChannelInitializer<SocketChannel>() {
+            @Override
+            protected void initChannel(SocketChannel ch) throws Exception {
+                ChannelPipeline p = ch.pipeline();
+                p.addLast("encoder", encoder);
+                p.addLast("decoder", new NettyDecoder());
+                p.addLast("idle", new IdleStateHandler(0, 0, CHANNEL_IDLE_MS, TimeUnit.MILLISECONDS));
+                beforeCommonPipeline(p, ch); // 给子类扩展
+                p.addLast("conn-manage", new NettyConnectManageHandler(eventDispatcher, isServerSide()));
+                afterCommonPipeline(p, ch); // 给子类扩展
+                p.addLast("back-pressure", backPressure);
+                p.addLast("process", process);
+            }
+        };
+    }
+
+    protected void beforeCommonPipeline(ChannelPipeline p, SocketChannel ch) {
+        // default no-op
+    }
+
+    protected void afterCommonPipeline(ChannelPipeline p, SocketChannel ch) {
+        // default no-op
     }
 }
